@@ -130,3 +130,53 @@ outliers = (df[cols] < q1 - 1.5 * iqr) | (df[cols] > q3 + 1.5 * iqr)
 print("\nIQR outliers per column:")
 print(outliers.sum())
 display(df[outliers.any(axis=1)])
+# %%
+
+# %% [markdown]
+# ## Step 2.5: Budget mix, top 25% vs. the rest
+
+# %%
+total = df[SPEND].sum(axis=1)
+mix = df[SPEND].div(total, axis=0).add_suffix("_share")   # spend-only, safe as model features later
+mix[TARGET] = df[TARGET]
+
+top_cut = df[TARGET].quantile(0.75)
+mix["group"] = np.where(df[TARGET] > top_cut, "Top 25% profit", "Rest")
+
+share_cols = [c + "_share" for c in SPEND]
+summary = mix.groupby("group")[share_cols].mean().mul(100).round(1)
+display(summary)
+
+summary.T.plot(kind="bar", rot=0, figsize=(8, 4.5), title="Average budget share (%)")
+plt.ylabel("% of total spend")
+plt.show()
+
+print("Does the share relate to profit?")
+for c in share_cols:
+    rho, p = stats.spearmanr(mix[c], mix[TARGET])
+    print(f"{c:<24} rho = {rho:+.2f}, p = {p:.3f}")
+
+print("\nMean total spend by group:")
+display(total.groupby(mix["group"]).mean().round(0).to_frame("total_spend"))
+
+# %% [markdown]
+# ## Step 2.6: Hypothesis check with bootstrap intervals
+
+# %%
+def boot_spearman_ci(x, y, n_boot=2000):
+    x, y = x.to_numpy(), y.to_numpy()
+    idx = RNG.integers(0, len(x), size=(n_boot, len(x)))
+    rs = [stats.spearmanr(x[i], y[i])[0] for i in idx]
+    return np.nanpercentile(rs, [2.5, 97.5])
+
+
+rows = []
+for c in SPEND:
+    rho, p = stats.spearmanr(df[c], df[TARGET])
+    lo, hi = boot_spearman_ci(df[c], df[TARGET])
+    rows.append({"feature": c, "spearman_rho": round(rho, 3), "p_value": round(p, 4),
+                 "ci95_low": round(lo, 3), "ci95_high": round(hi, 3)})
+
+hyp = pd.DataFrame(rows).set_index("feature")
+display(hyp)
+# %%
