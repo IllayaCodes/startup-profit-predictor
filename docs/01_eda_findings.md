@@ -50,3 +50,13 @@ The predictions follow the red line fairly well, with more scatter at the low-pr
 
 ## What I will pick
 A plain linear model is as accurate as the tree models and I can explain it, so I will use linear regression. I still need to decide whether to use R&D alone or all three spends.
+
+# Final model
+
+I picked a plain linear regression on all three spends. In my tests it was as accurate as the tree models, and I can explain it.
+
+I trained it on all 50 startups and saved it in models/startup_profit_model.joblib. The typical error from cross-validation is about 9,764 (RMSE) and 7,175 (MAE). The coefficients are the same as before: about 0.81 for R&D, -0.03 for admin and 0.03 for marketing, with an intercept of about 50,122.
+
+To show how unsure a prediction is, I built a 90% range from the errors in cross-validation. For one prediction the range goes from about 17,300 below to about 13,300 above. It is not the same on both sides, because the model's bigger mistakes are over-predictions (like row 49). I checked the range by building it without each startup and then testing on that startup. It covered about 89% of the cases, which is close to the 90% I wanted.
+
+The range is the same width for every input, so it does not get wider for strange inputs. When someone enters a spend outside what the model has seen (R&D above 165,349, for example), the app will show a warning. At an R&D of 500,000 the model says about 455,000, and I would not trust that.
