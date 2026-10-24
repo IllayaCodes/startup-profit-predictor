@@ -1,4 +1,4 @@
-"""Startup Profit Predictor (Streamlit app)"""
+"""Startup Profit Predictor (Streamlit app), version 2."""
 import sys
 from pathlib import Path
 
@@ -53,22 +53,59 @@ result = predict_profit(
 )
 pred, low, high = result["prediction"], result["low"], result["high"]
 level = int(result["level"] * 100)
+out_of_range = bool(result["warnings"])
 
 c1, c2, c3 = st.columns(3)
 c1.metric("Predicted profit", f"{pred:,.0f}")
 c2.metric(f"Low end ({level}% range)", f"{low:,.0f}")
 c3.metric(f"High end ({level}% range)", f"{high:,.0f}")
 
-for w in result["warnings"]:
-    st.warning(w)
+if out_of_range:
+    st.error(
+        "Some inputs are outside the data this model learned from, "
+        "so the numbers above are not reliable."
+    )
+    for w in result["warnings"]:
+        st.warning(w)
+else:
+    higher_than = (df[TARGET] < pred).mean() * 100
+    st.write(f"The predicted profit is higher than {higher_than:.0f}% of the 50 startups in the data.")
 
-higher_than = (df[TARGET] < pred).mean() * 100
-st.write(f"The predicted profit is higher than {higher_than:.0f}% of the 50 startups in the data.")
+    fig = px.histogram(df, x=TARGET, nbins=15, title="Profit of the 50 startups")
+    fig.add_vrect(x0=low, x1=high, fillcolor="red", opacity=0.15, line_width=0)
+    fig.add_vline(x=pred, line_dash="dash", line_color="red")
+    st.plotly_chart(fig)
 
-fig = px.histogram(df, x=TARGET, nbins=15, title="Profit of the 50 startups")
-fig.add_vrect(x0=low, x1=high, fillcolor="red", opacity=0.15, line_width=0)
-fig.add_vline(x=pred, line_dash="dash", line_color="red")
-st.plotly_chart(fig)
+st.subheader("How your budget split compares")
+total_in = sum(inputs.values())
+if total_in > 0:
+    user_share = {c: inputs[c] / total_in * 100 for c in SPEND_COLS}
+    shares = df[SPEND_COLS].div(df[SPEND_COLS].sum(axis=1), axis=0) * 100
+    top = df[TARGET] > df[TARGET].quantile(0.75)
+
+    mix = pd.DataFrame({
+        "Your budget": pd.Series(user_share),
+        "Top 25% by profit (average)": shares[top].mean(),
+        "Other startups (average)": shares[~top].mean(),
+    })
+    mix.index = [LABELS[c] for c in mix.index]
+    mix.index.name = "Spend"
+    long = mix.reset_index().melt(
+        id_vars="Spend", var_name="Group", value_name="Share of total spend (%)"
+    )
+    fig2 = px.bar(long, x="Spend", y="Share of total spend (%)", color="Group", barmode="group")
+    st.plotly_chart(fig2)
+
+    top_total = df.loc[top, SPEND_COLS].sum(axis=1).mean()
+    rest_total = df.loc[~top, SPEND_COLS].sum(axis=1).mean()
+    st.caption(
+        f"The top group is the {int(top.sum())} startups with the highest profit. They also spend more "
+        f"in total (about {top_total:,.0f} on average, against {rest_total:,.0f} for the others), "
+        "so the split and the amount go together. This shows what they did in this data, "
+        "not what you should do."
+    )
+else:
+    st.info("Enter at least one spend above zero to see the comparison.")
 
 with st.expander("How this works and what to be careful about"):
     st.write(
