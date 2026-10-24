@@ -6,11 +6,12 @@
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-1.9.1-orange)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.66.1-red)
 
+**Try it live:** https://startup-profit-predictor-knd8d9iihqglbhzmaimwut.streamlit.app/
+
 ![The app: predicted profit with its 90% range](docs/app_screenshot_1.jpeg)
 
 ![The app: how your budget split compares](docs/app_screenshot_2.jpeg)
 
-<!-- After you deploy, add: *Live app:* https://your-app-link -->
 
 I built this project to practise doing a data project from start to finish: asking questions, exploring the data, comparing models fairly, and turning the result into a small app that people can use.
 
