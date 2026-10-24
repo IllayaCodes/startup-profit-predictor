@@ -1,0 +1,6 @@
+-r requirements.txt
+scipy==1.18.1
+seaborn==0.13.2
+matplotlib==3.11.2
+ipykernel
+pytest
