@@ -124,6 +124,3 @@ tests/                  14 pytest tests
 - The links I found are not proof of cause. A link between R&D and profit in this data does not mean more R&D would raise the profit of a particular company.
 - The 90% range has the same width for every input, so it does not widen for unusual ones. That is why the app shows a warning instead.
 - A straight-line model can give nonsense far outside the data. For example, an R&D of 500,000 gives about 455,000, and I would not trust that.
-
----
-
